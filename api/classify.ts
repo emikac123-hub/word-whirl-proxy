@@ -33,7 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'Return JSON: {"valid": boolean, "pos": ["noun"|"verb"|"adjective"|"adverb"|"properNoun"], "base": string}. ' +
       '"valid" must be true ONLY if the word is PRIMARILY used as that part of speech in everyday language, ' +
       "not merely possible as a secondary or derived form (e.g., a gerund). " +
-      'For example: "running" can act as a noun (a gerund), but its primary use is as a verb, so it should NOT be considered valid for "noun".';
+      'For example: "running" can act as a noun (a gerund), but its primary use is as a verb, so it should NOT be considered valid for "noun".' +
+      `Always apply the grammatical norms of the provided locale (${locale}), and if the word has multiple parts of speech, rank by its most common dictionary usage.`
 
     const user = `Locale: ${locale || "en"}\nWord: "${word}"\nRequiredPOS: ${
       requiredPOS || "none"
