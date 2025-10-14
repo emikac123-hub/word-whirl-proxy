@@ -1,26 +1,25 @@
-// /api/rateStory.ts
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createApiHandler } from "./_lib/handler";
+import { fetchChatCompletion } from "./_lib/openai";
 
-type Category = 'humor' | 'creativity' | 'coherence' | 'overall';
+type Category = "humor" | "creativity" | "coherence" | "overall";
+const ALL_CATEGORIES: Category[] = [
+  "humor",
+  "creativity",
+  "coherence",
+  "overall",
+];
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+export default createApiHandler(async (req, res, { apiKey }) => {
+  const { story, locale, categories } = req.body ?? {};
+  if (!story || typeof story !== "string") {
+    return res.status(400).json({ error: "Missing story text" });
+  }
 
-  try {
-    const { story, locale, categories } = req.body ?? {};
-    if (!story || typeof story !== 'string') {
-      return res.status(400).json({ error: 'Missing story text' });
-    }
+  const cats: Category[] = (
+    Array.isArray(categories) && categories.length ? categories : ALL_CATEGORIES
+  ).filter((c): c is Category => ALL_CATEGORIES.includes(c));
 
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) return res.status(500).json({ error: 'Server not configured' });
-
-    const cats: Category[] = (Array.isArray(categories) && categories.length
-      ? categories
-      : ['humor', 'creativity', 'coherence', 'overall']
-    ).filter((c): c is Category => ['humor', 'creativity', 'coherence', 'overall'].includes(c));
-
-    const sys = `
+  const systemPrompt = `
 You are a concise story rater. Return strict JSON with 1–5 integer scores per requested category and a short note.
 Schema:
 {
@@ -36,30 +35,20 @@ Guidelines:
 - Keep "note" one or two short sentences.
 - Do not include any extra fields.`;
 
-    const user = `Locale: ${locale || 'en'}
-Categories: ${cats.join(', ')}
+  const userPrompt = `Locale: ${locale || "en"}
+Categories: ${cats.join(", ")}
 Story:
 """
 ${story}
 """`;
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-        messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
-      }),
+  try {
+    const parsed = await fetchChatCompletion({
+      apiKey,
+      systemPrompt,
+      userPrompt,
+      temperature: 0.4,
     });
-
-    const data = await r.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return res.status(502).json({ error: 'No response from OpenAI' });
-
-    let parsed: any;
-    try { parsed = JSON.parse(content); } catch { return res.status(502).json({ error: 'Invalid JSON from model' }); }
 
     // Normalize and clamp 1–5
     const ratings: Record<string, number> = {};
@@ -68,11 +57,11 @@ ${story}
       const n = Math.min(5, Math.max(1, Math.round(Number(raw) || 0))) || 1;
       ratings[c] = n;
     }
-    const note = typeof parsed?.note === 'string' ? parsed.note : '';
+    const note = typeof parsed?.note === "string" ? parsed.note : "";
 
     res.status(200).json({ ratings, note });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Server error' });
+  } catch (err: any) {
+    // Errors from fetchChatCompletion are already logged
+    return res.status(502).json({ error: err.message });
   }
-}
+});
