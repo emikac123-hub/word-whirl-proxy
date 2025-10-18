@@ -28,11 +28,11 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "A given 'type' of the word will be provided. If it matches that type, requiredPos should be true, otherwise false.",
     "For example, if the type is 'material', 'cotton' would return true, but 'dog' would return false.",
     // include the literal word 'json' to satisfy response_format guards
-    'Return ONLY valid json in this exact shape: {"exists": boolean, "confidence": number, "pos": string[], "requiredPos": boolean}.',
-    "Output json only—no explanation.",
+
     // Add to the systemPrompt lines:
     'Also include a "tags" array of simple semantic categories (e.g. food, liquid, animal, material, color, duration, container, location, person, vehicle, toy, plant, weather, emotion). Use 0–3 tags only when clearly applicable.',
-    'Return ONLY valid json: {"exists": boolean, "confidence": number, "pos": string[], "requiredPos": boolean, "tags": string[]}.',
+    'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean "confidence": number, "pos": string[], "tags": string[]}\n',
+    "Output json only—no explanation.",
   ].join(" ");
 
   const userPrompt =
@@ -51,19 +51,19 @@ export default createApiHandler(async (req, res, { apiKey }) => {
 
     // Normalize/guard fields from the model
     const pos = Array.isArray(parsed.pos) ? parsed.pos : [];
+    const valid = !!parsed.valid
     const tags = Array.isArray(parsed.tags) ? parsed.tags : [];
     const confidence =
       typeof parsed.confidence === "number" ? parsed.confidence : 0;
     const exists = !!parsed.exists;
-    const requiredPos = !!parsed.requiredPos;
     // Your app expects: { valid, confidence, pos, requiredPos }
     // Where 'valid' reflects existence (you previously mapped this way)
     // and 'requiredPos' means "matches requested type/POS".
     return res.status(200).json({
-      valid: exists,
+      exists,
+      valid,
       confidence,
       pos,
-      requiredPos,
       tags,
     });
   } catch (err: any) {
