@@ -25,13 +25,14 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "You are a multilingual lexicon checker.",
     "Given a single token and its language, determine if it exists as a real word in that language.",
     "Provide the parts of speech it is associated with.",
-    "A given 'type' of the word will be provided. If it matches that type, requiredPos should be true, otherwise false.",
-    "For example, if the type is 'material', 'cotton' would return true, but 'dog' would return false.",
+    "A given 'type' of the word will be provided. If it matches that type, 'valid' should be true, otherwise false.",
+    "For example, if the type is 'material', the type 'cotton' would return true, but 'dog' would return false.",
     // include the literal word 'json' to satisfy response_format guards
 
     // Add to the systemPrompt lines:
     'Also include a "tags" array of simple semantic categories (e.g. food, liquid, animal, material, color, duration, container, location, person, vehicle, toy, plant, weather, emotion). Use 0–3 tags only when clearly applicable.',
     'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean "confidence": number, "pos": string[], "tags": string[]}\n',
+    'Summary: exists represents if the word exists in that langauge. Valid represents a boolean if it matches the TYPE passed in.',
     "Output json only—no explanation.",
   ].join(" ");
 
