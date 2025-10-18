@@ -14,7 +14,6 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     '"exists" should be true if the word is commonly used or appears in standard dictionaries for that language. ' +
     "Ignore capitalization and accent variations. " +
     "Do not classify part of speech or give examples.";
-
   const userPrompt = `Language: "${locale}"\nWord: "${word}"\n\nDoes this word exist as a valid word in the given language?`;
 
   try {
