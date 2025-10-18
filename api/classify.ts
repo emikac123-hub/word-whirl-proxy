@@ -9,8 +9,8 @@ export default createApiHandler(async (req, res, { apiKey }) => {
 
   const systemPrompt =
     "You are a multilingual lexicon checker. " +
-    "Given a single token and its language, determine if it exists as a real word in that language. " +
-    'Return ONLY valid JSON in the following format: {"exists": boolean, "confidence": number}. ' +
+    "Given a single token and its language, determine if it exists as a real word in that language. Provide the parts of speech it is associated with " +
+    'Return ONLY valid JSON in the following format: {"exists": boolean, "confidence": number, "pos": string[]}. ' +
     '"exists" should be true if the word is commonly used or appears in standard dictionaries for that language. ' +
     "Ignore capitalization and accent variations. " +
     "Do not classify part of speech or give examples.";
@@ -24,12 +24,10 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     });
 
     const pos = Array.isArray(parsed.pos) ? parsed.pos : [];
-    const base = typeof parsed.base === "string" ? parsed.base : word;
-    const valid =
-      Boolean(parsed.valid) &&
-      (requiredPOS ? pos.includes(requiredPOS) : pos.length > 0);
+    const confidence = parsed.confidence;
+    const valid = Boolean(parsed.exists);
 
-    return res.status(200).json({ valid, pos, base });
+    return res.status(200).json({ valid, confidence, pos });
   } catch (err: any) {
     // Errors from fetchChatCompletion are already logged
     return res.status(502).json({ error: err.message });
