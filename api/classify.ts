@@ -2,7 +2,21 @@ import { createApiHandler } from "./_lib/handler";
 import { fetchChatCompletion } from "./_lib/openai";
 
 export default createApiHandler(async (req, res, { apiKey }) => {
-  const { word, locale, requiredPOS } = req.body ?? {};
+  // Accept BOTH the new keys and the old keys for back-compat
+  const body = req.body ?? {};
+  const word: string | undefined = body.word;
+
+  // Normalize to a single set we use below
+  const locale: string =
+    typeof body.locale === "string" && body.locale
+      ? body.locale
+      : typeof body.appLanguage === "string" && body.appLanguage
+      ? body.appLanguage
+      : "en";
+
+  const requiredPOS: string | null =
+    body.requiredPOS ?? body.requestedPos ?? null;
+
   if (!word || typeof word !== "string" || word.length > 40) {
     return res.status(400).json({ error: "Invalid input" });
   }
@@ -13,25 +27,41 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "Provide the parts of speech it is associated with.",
     "A given 'type' of the word will be provided. If it matches that type, requiredPos should be true, otherwise false.",
     "For example, if the type is 'material', 'cotton' would return true, but 'dog' would return false.",
+    // include the literal word 'json' to satisfy response_format guards
     'Return ONLY valid json in this exact shape: {"exists": boolean, "confidence": number, "pos": string[], "requiredPos": boolean}.',
     "Output json only—no explanation.",
   ].join(" ");
-  const userPrompt = `Type: ${requiredPOS}\n Language: "${locale}"\nWord: "${word}"\n\nDoes this word exist as a valid word in the given language? Does the type provided match?`;
+
+  const userPrompt =
+    `Type: ${requiredPOS}\n` +
+    `Language: "${locale}"\n` +
+    `Word: "${word}"\n\n` +
+    "Does this word exist as a valid word in the given language? Does the type provided match?";
 
   try {
     const parsed = await fetchChatCompletion({
       apiKey,
       systemPrompt,
       userPrompt,
+      // assuming your wrapper sets response_format: { type: "json_object" }
     });
 
+    // Normalize/guard fields from the model
     const pos = Array.isArray(parsed.pos) ? parsed.pos : [];
-    const confidence = parsed.confidence;
-    const valid = Boolean(parsed.exists);
+    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+    const exists = Boolean(parsed.exists);
     const requiredPos = Boolean(parsed.requiredPos);
-    return res.status(200).json({ valid, confidence, pos, requiredPos });
+
+    // Your app expects: { valid, confidence, pos, requiredPos }
+    // Where 'valid' reflects existence (you previously mapped this way)
+    // and 'requiredPos' means "matches requested type/POS".
+    return res.status(200).json({
+      valid: exists,
+      confidence,
+      pos,
+      requiredPos,
+    });
   } catch (err: any) {
-    // Errors from fetchChatCompletion are already logged
     return res.status(502).json({ error: err.message });
   }
 });
