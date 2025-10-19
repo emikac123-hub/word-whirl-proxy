@@ -10,8 +10,9 @@ export default createApiHandler(async (req, res, { apiKey }) => {
   const systemPrompt =
     "You are a multilingual lexicon checker. " +
     "Given a single token and its language, determine if the word is plural. " +
-    'Return ONLY valid JSON in the following format: {"isPlural": boolean, "confidence": number}. ' +
+    'Return ONLY valid JSON in the following format: {"isPlural": boolean, "isProfane": boolean, "confidence": number}. ' +
     '"isPlural" should be true if the word is credibly a plural version of the standard noun in standard dictionaries for that language. ' +
+    'If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set "profane" to true' +
     "Ignore capitalization and accent variations. ";
 
   const userPrompt = `Language: "${locale}"\nWord: "${word}"\n\nIs this word plural in the given language?`;
@@ -23,8 +24,9 @@ export default createApiHandler(async (req, res, { apiKey }) => {
       userPrompt,
     });
     const isPlural = parsed?.isPlural ?? false;
+    const isProfane = parsed?.isProfane ?? false;
     console.log(`Parsed: ${parsed}`)
-    res.status(200).json({ isPlural });
+    res.status(200).json({ isPlural, isProfane });
   } catch (err: any) {
     // Errors from fetchChatCompletion are already logged
     return res.status(502).json({ error: err.message });
