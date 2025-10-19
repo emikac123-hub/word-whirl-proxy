@@ -28,7 +28,7 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "A given 'type' of the word will be provided. If it matches that type, 'valid' should be true, otherwise false.",
     "For example, if the type is 'material', the type 'cotton' would return true, but 'dog' would return false.",
     'Also include a "tags" array of simple semantic categories (e.g. food, liquid, animal, material, color, duration, container, location, person, vehicle, toy, plant, weather, emotion). Use 0–3 tags only when clearly applicable.',
-    "If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set both 'exists', 'valid' and 'profane' to false, and do not assign any POS or tags.",
+    "If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set both 'exists', 'valid' to false and 'profane' to true, and do not assign any POS or tags.",
     'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean, "profane": boolean, "confidence": number, "pos": string[], "tags": string[]}',
     "Summary: 'exists' represents if the word exists in that language. 'valid' represents if it matches the requested TYPE. Profane or harmful words are treated as non-existent.",
     "Output json only—no explanation.",
