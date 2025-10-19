@@ -28,8 +28,8 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "A given 'type' of the word will be provided. If it matches that type, 'valid' should be true, otherwise false.",
     "For example, if the type is 'material', the type 'cotton' would return true, but 'dog' would return false.",
     'Also include a "tags" array of simple semantic categories (e.g. food, liquid, animal, material, color, duration, container, location, person, vehicle, toy, plant, weather, emotion). Use 0–3 tags only when clearly applicable.',
-    "If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set both 'exists' and 'valid' to false, and do not assign any POS or tags.",
-    'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean, "confidence": number, "pos": string[], "tags": string[]}',
+    "If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set both 'exists', 'valid' and 'profane' to false, and do not assign any POS or tags.",
+    'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean, "profane": boolean, "confidence": number, "pos": string[], "tags": string[]}',
     "Summary: 'exists' represents if the word exists in that language. 'valid' represents if it matches the requested TYPE. Profane or harmful words are treated as non-existent.",
     "Output json only—no explanation.",
   ].join(" ");
@@ -38,7 +38,7 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     `Type: ${requiredPOS}\n` +
     `Language: "${locale}"\n` +
     `Word: "${word}"\n\n` +
-    "Does this word exist as a valid word in the given language? Does the type provided match?";
+    "Does this word exist as a valid word in the given language? Does the type provided match? Is it profanity?";
 
   try {
     const parsed = await fetchChatCompletion({
@@ -55,12 +55,14 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     const confidence =
       typeof parsed.confidence === "number" ? parsed.confidence : 0;
     const exists = !!parsed.exists;
+    const profane = !!parsed.profane;
     // Your app expects: { valid, confidence, pos, requiredPos }
     // Where 'valid' reflects existence (you previously mapped this way)
     // and 'requiredPos' means "matches requested type/POS".
     return res.status(200).json({
       exists,
       valid,
+      profane,
       confidence,
       pos,
       tags,
