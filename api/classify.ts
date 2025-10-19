@@ -27,12 +27,10 @@ export default createApiHandler(async (req, res, { apiKey }) => {
     "Provide the parts of speech it is associated with.",
     "A given 'type' of the word will be provided. If it matches that type, 'valid' should be true, otherwise false.",
     "For example, if the type is 'material', the type 'cotton' would return true, but 'dog' would return false.",
-    // include the literal word 'json' to satisfy response_format guards
-
-    // Add to the systemPrompt lines:
     'Also include a "tags" array of simple semantic categories (e.g. food, liquid, animal, material, color, duration, container, location, person, vehicle, toy, plant, weather, emotion). Use 0–3 tags only when clearly applicable.',
-    'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean "confidence": number, "pos": string[], "tags": string[]}\n',
-    'Summary: exists represents if the word exists in that langauge. Valid represents a boolean if it matches the TYPE passed in.',
+    "If the word is profane, sexual, hateful, violent, or otherwise inappropriate for a general audience, set both 'exists' and 'valid' to false, and do not assign any POS or tags.",
+    'Return ONLY valid json in this exact shape: {"exists": boolean, "valid": boolean, "confidence": number, "pos": string[], "tags": string[]}',
+    "Summary: 'exists' represents if the word exists in that language. 'valid' represents if it matches the requested TYPE. Profane or harmful words are treated as non-existent.",
     "Output json only—no explanation.",
   ].join(" ");
 
@@ -52,7 +50,7 @@ export default createApiHandler(async (req, res, { apiKey }) => {
 
     // Normalize/guard fields from the model
     const pos = Array.isArray(parsed.pos) ? parsed.pos : [];
-    const valid = !!parsed.valid
+    const valid = !!parsed.valid;
     const tags = Array.isArray(parsed.tags) ? parsed.tags : [];
     const confidence =
       typeof parsed.confidence === "number" ? parsed.confidence : 0;
