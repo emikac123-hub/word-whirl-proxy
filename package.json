@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@types/node": "^24.9.2",
+    "next": "^16.0.1",
     "vercel": "^48.2.9"
   }
 }
