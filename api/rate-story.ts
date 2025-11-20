@@ -10,7 +10,7 @@ const ALL_CATEGORIES: Category[] = [
 ];
 
 export default createApiHandler(async (req, res, { apiKey }) => {
-  const { story, locale, categories } = req.body ?? {};
+  const { story, locale, answers, categories } = req.body ?? {};
   if (!story || typeof story !== "string") {
     return res.status(400).json({ error: "Missing story text" });
   }
@@ -21,6 +21,8 @@ export default createApiHandler(async (req, res, { apiKey }) => {
 
   const systemPrompt = `
 You are a concise story rater. Return strict JSON with 1–5 integer scores per requested category and a short note.
+Recall that this is a Mad Libs style story. The users did not create it. They ONLY provided the answers. Rate the story
+in context of how funny, creative, and outlandish the answers are in context of the stoy.
 Schema:
 {
   "ratings": { "<category>": 1|2|3|4|5, ... },
@@ -29,14 +31,15 @@ Schema:
 Guidelines:
 - Rate ONLY requested categories.
 - Humor: funniness (wordplay, surprise, absurdity).
-- Creativity: originality, imaginative turns.
-- Coherence: clarity, flow, payoff.
+- Creativity: Were the answers they used funny or unexecpected.
+- Coherence: Are all of the answers used the correct part of speech for its position in the sentence.
 - Overall: overall entertainment value (not an average; your judgment).
 - Keep "note" one or two short sentences.
 - Do not include any extra fields.`;
 
   const userPrompt = `Locale: ${locale || "en"}
 Categories: ${cats.join(", ")}
+Provided Answers: ${answers}
 Story:
 """
 ${story}
